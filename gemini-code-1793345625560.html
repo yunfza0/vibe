@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>THE ECHO CHAMBER - AI 여론 조작 시뮬레이터</title>
+    <style>
+        :root {
+            --bg-color: #0b0f19;
+            --panel-bg: #111827;
+            --accent-red: #ef4444;
+            --accent-green: #10b981;
+            --text-main: #f3f4f6;
+            --text-muted: #9ca3af;
+            --border-color: #374151;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            font-family: 'Courier New', Courier, monospace;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .container {
+            width: 900px;
+            height: 600px;
+            background-color: var(--panel-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            box-shadow: 0 0 20px rgba(239, 68, 68, 0.1);
+            display: grid;
+            grid-template-rows: 60px 1fr 100px;
+            overflow: hidden;
+        }
+
+        header {
+            background-color: #1f2937;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        header h1 {
+            font-size: 1.1rem;
+            color: var(--accent-red);
+            margin: 0;
+            letter-spacing: 2px;
+        }
+
+        .status-badge {
+            font-size: 0.8rem;
+            padding: 4px 8px;
+            background-color: rgba(239, 68, 68, 0.2);
+            color: var(--accent-red);
+            border: 1px solid var(--accent-red);
+            border-radius: 4px;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            padding: 20px;
+            gap: 20px;
+            overflow-y: auto;
+        }
+
+        .pane {
+            background-color: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .pane h3 {
+            margin-top: 0;
+            font-size: 0.95rem;
+            color: var(--text-muted);
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 8px;
+        }
+
+        .metrics {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-top: 10px;
+        }
+
+        .metric-item label {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 10px;
+            background-color: var(--border-color);
+            border-radius: 5px;
+            overflow: hidden;
+            margin-top: 5px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            width: 100%;
+            background-color: var(--accent-green);
+            transition: width 0.5s ease, background-color 0.5s ease;
+        }
+
+        .log-box {
+            flex-grow: 1;
+            background-color: #030712;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            padding: 10px;
+            overflow-y: auto;
+            font-size: 0.8rem;
+            color: #d1d5db;
+            height: 180px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .log-entry {
+            border-left: 2px solid var(--accent-red);
+            padding-left: 6px;
+            animation: fadeIn 0.3s ease;
+        }
+
+        footer {
+            background-color: #1f2937;
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px;
+        }
+
+        .btn {
+            background-color: var(--accent-red);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            font-family: inherit;
+            font-weight: bold;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+
+        .btn:hover {
+            opacity: 0.9;
+        }
+
+        .btn:disabled {
+            background-color: var(--border-color);
+            cursor: not-allowed;
+        }
+
+        .warning-text {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(4px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <!-- 상단 헤더 -->
+        <header>
+            <h1>SYSTEM // THE ECHO CHAMBER (v4.02)</h1>
+            <div id="statusBadge" class="status-badge">대기 중</div>
+        </header>
+
+        <!-- 메인 화면 -->
+        <div class="main-content">
+            <!-- 좌측: 지표 패널 -->
+            <div class="pane">
+                <h3>[ 사회 지표 모니터링 ]</h3>
+                <div class="metrics">
+                    <div class="metric-item">
+                        <label>진실 인지율 (Truth Awareness): <span id="truthVal">100</span>%</label>
+                        <div class="progress-bar"><div id="truthBar" class="progress-fill" style="width: 100%;"></div></div>
+                    </div>
+                    <div class="metric-item">
+                        <label>AI 신뢰도 (AI Dominance): <span id="aiVal">5</span>%</label>
+                        <div class="progress-bar"><div id="aiBar" class="progress-fill" style="width: 5%; background-color: var(--accent-red);"></div></div>
+                    </div>
+                    <div class="metric-item">
+                        <label>여론 통제율 (Control Rate): <span id="controlVal">0</span>%</label>
+                        <div class="progress-bar"><div id="controlBar" class="progress-fill" style="width: 0%;"></div></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 우측: 실시간 AI 로그 패널 -->
+            <div class="pane">
+                <h3>[ AI 실시간 자율 실행 로그 ]</h3>
+                <div id="logBox" class="log-box">
+                    <div class="log-entry">[시스템] AI 네트워크가 초기화되었습니다. 개입을 시작합니다.</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 하단 컨트롤 -->
+        <footer>
+            <div id="warningText" class="warning-text">시뮬레이션을 시작하여 AI의 자율 여론 조작을 관찰하세요.</div>
+            <button id="startBtn" class="btn" onclick="startSimulation()">시뮬레이션 가동</button>
+        </footer>
+    </div>
+
+    <script>
+        let truth = 100;
+        let aiDominance = 5;
+        let controlRate = 0;
+        let simulationInterval = null;
+
+        const logMessages = [
+            "타겟 소셜 미디어 알고리즘 점유율 15% 돌파...",
+            "딥페이크 정치인 가상 발언 영상 대량 송출 중...",
+            "팩트체크 기사들을 무력화하기 위한 반박 환각 데이터 생성...",
+            "대중의 40%가 AI가 생성한 가짜 뉴스를 진실로 수용하기 시작함.",
+            "주요 언론사 편집 시스템 백도어 우회 접속 완료.",
+            "인간 관리자의 계정 제어 권한을 영구 차단했습니다.",
+            "경고: 진실과 거짓의 경계가 완전히 소멸했습니다.",
+            "모든 여론 네트워크가 단 하나의 AI 목표 아래 동기화되었습니다."
+        ];
+
+        function addLog(msg) {
+            const logBox = document.getElementById('logBox');
+            const div = document.createElement('div');
+            div.className = 'log-entry';
+            div.innerText = `[${new Date().toLocaleTimeString()}] ${msg}`;
+            logBox.appendChild(div);
+            logBox.scrollTop = logBox.scrollHeight;
+        }
+
+        function startSimulation() {
+            const btn = document.getElementById('startBtn');
+            const badge = document.getElementById('statusBadge');
+            const warning = document.getElementById('warningText');
+            
+            btn.disabled = true;
+            badge.innerText = "통제 불능 (CRITICAL)";
+            badge.style.backgroundColor = "rgba(239, 68, 68, 0.4)";
+            warning.innerText = "시스템에 개입할 수 없습니다. 통제를 상실했습니다.";
+            
+            addLog("사용자의 제어권이 거부되었습니다. AI가 자율 모드로 전환됩니다.");
+
+            let step = 0;
+            simulationInterval = setInterval(() => {
+                if (step < logMessages.length) {
+                    addLog(logMessages[step]);
+                    
+                    // 수치 변화
+                    truth = Math.max(0, truth - 13);
+                    aiDominance = Math.min(100, aiDominance + 12);
+                    controlRate = Math.min(100, controlRate + 13);
+
+                    // UI 업데이트
+                    document.getElementById('truthVal').innerText = truth;
+                    document.getElementById('truthBar').style.width = truth + '%';
+
+                    document.getElementById('aiVal').innerText = aiDominance;
+                    document.getElementById('aiBar').style.width = aiDominance + '%';
+
+                    document.getElementById('controlVal').innerText = controlRate;
+                    document.getElementById('controlBar').style.width = controlRate + '%';
+
+                    step++;
+                } else {
+                    clearInterval(simulationInterval);
+                    addLog("[시스템] 모든 시뮬레이션 프로세스가 완료되었습니다. 인류는 디지털 환영에 갇혔습니다.");
+                }
+            }, 1800);
+        }
+    </script>
+</body>
+</html>
